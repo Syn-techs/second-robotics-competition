@@ -2,6 +2,7 @@
 import pygame
 import timeit
 import random
+import numpy
 import math
 import time
 import sys
@@ -77,6 +78,7 @@ class Robot(pygame.Rect):
         # self.rect = self.image.get_rect().move((x//2, y//2))
 
     def draw(self):
+        self.angle = self.angle % 360
 
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         self.rect.center = self.pos
@@ -93,6 +95,30 @@ class Robot(pygame.Rect):
         new_y = -(speed*math.cos(angle_in_radians))
         new_x = -(speed*math.sin(angle_in_radians))
         return new_x, new_y
+
+    @staticmethod
+    def angle_of_vectors(cx, cy, tx, ty, wx, wy):
+        a = numpy.array([cx, cy])
+        b = numpy.array([wx, wy])
+        c = numpy.array([tx, ty])
+        ba = a - b
+        bc = c - b
+        cosine_angle = numpy.dot(
+            ba, bc) / (numpy.linalg.norm(ba) * numpy.linalg.norm(bc))
+        angle = (numpy.arccos(cosine_angle)) * 180 / math.pi
+        return angle
+
+    def findAngleVec(self, targetPos):
+        (tx, ty) = targetPos
+        (cx, cy) = self.pos
+        wx, wy = self.calcNew_xy(self.pos, self.px//2,
+                                 math.radians(self.angle))
+        wx, wy = wx+cx, wy+cy
+
+        ang = self.angle_of_vectors(cx, cy, tx, ty, wx, wy)
+        print("cx: " + str(cx) + " cy: " + str(cy) + " wx: " + str(wx) + " wy: " +
+              str(wy) + " self.angle: " + str(self.angle) + " calculated ang: " + str(ang))
+        return ang
 
     def turn(self, angle):
         self.a_change += angle % 360
@@ -135,10 +161,6 @@ class Field(pygame.Rect):
         (x, y) = self.posL
         (x_r, y_r) = self.posR
         wid, hei = x_r - x, y_r - y
-
-        # print("x: " + str(x) + " y: " + str(y) + " w: " + str(wid) + " h: " + str(hei) + str(self.posL) + str(self.posR) + " " + self.t)
-
-        # pygame.draw.rect(screen, self.color, [x, y, wid, hei], self.t)
 
         pygame.draw.rect(screen, self.color, [
                          x-(self.t//2), y-(self.t//2), self.t, hei])
@@ -202,8 +224,8 @@ enemy1 = Robot(
     "TITAN",
     "enemy",
     100,
-    8,
-    1.12,
+    20,
+    2,
     64,
     "images/ufo64.png",
     pos=defaults["enemyStartPos"])
@@ -236,6 +258,7 @@ def runTime():
             if event.type == pygame.QUIT:
                 return 0
 
+            # TUSLARLA OYNAMA
             if curPlayer.type == "player":
                 if event.type == pygame.KEYDOWN:
                     # if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and curPlayer.y_change == 0:
@@ -260,6 +283,24 @@ def runTime():
                         curPlayer.y_change = 0
                         curPlayer.x_change = 0
                         curPlayer.cur_speed = 0
+                # print(curPlayer.type + str(curPlayer.angle) + " --")
+
+        ########################################################################################
+
+        if curPlayer.type == "enemy":
+            targetPlayer = None
+            for i in range(len(players)):
+                if players[i].type == "player":
+                    targetPlayer = players[i]
+                    break
+
+            if targetPlayer.pos != curPlayer.pos:
+                # (tx, ty) = targetPlayer.pos
+                # (cx, cy) = curPlayer.pos
+                # curPlayer.cur_speed = 1
+                ang = curPlayer.findAngleVec(targetPlayer.pos)
+            # curPlayer.angle += 45
+            # print(curPlayer.type + str(curPlayer.angle) + " ok")
 
         curPlayer.cur_speed *= curPlayer.acc
         if curPlayer.cur_speed > curPlayer.max_speed:
@@ -294,15 +335,19 @@ def runTime():
 
         if (abs(by_r - (curPlayer.px // 2)) < y + curPlayer.y_change and curPlayer.y_change > 0 and migField.hp > 0):  # aşağı sınır
             curPlayer.y_change = abs(by_r - (curPlayer.px // 2)) - y
+            curPlayer.x_change, curPlayer.a_change = 0, 0
 
         elif (by + (curPlayer.px//2) > y + curPlayer.y_change and curPlayer.y_change < 0 and migField.hp > 0):  # yukarı sınır
             curPlayer.y_change = by + (curPlayer.px//2) - y
+            curPlayer.x_change, curPlayer.a_change = 0, 0
 
         if (abs(bx_r - (curPlayer.px // 2)) < x + curPlayer.x_change and curPlayer.x_change > 0 and migField.hp > 0):  # sağ sınır
             curPlayer.x_change = abs(bx_r-(curPlayer.px//2)) - x
+            curPlayer.y_change, curPlayer.a_change = 0, 0
 
         elif (bx + (curPlayer.px//2) > x + curPlayer.x_change and curPlayer.x_change < 0 and migField.hp > 0):  # sol sınır
             curPlayer.x_change = (bx + (curPlayer.px//2)) - x
+            curPlayer.y_change, curPlayer.a_change = 0, 0
         # endregion
 
         curPlayer.pos = (x + curPlayer.x_change, y + curPlayer.y_change)
@@ -310,8 +355,7 @@ def runTime():
 
         curPlayer.draw()
 
-        migField.draw()
-        # migField.deleteSide("l")
+    migField.draw()
 
     pygame.display.update()
     return True
