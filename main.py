@@ -40,9 +40,13 @@ colors = {
     "gay pink": (255, 20, 147)
 }
 
+field_wh = [(80, 120), (width-80, height-80)]
+(a1, a2), (a3, a4) = field_wh[0], field_wh[1]
+field_wh = [field_wh[0], field_wh[1], a1, a2, a3, a4]
+
 defaults = {
     "playerStartPos": (width//2, height//2),
-    "enemyStartPos": (width-20, height-20),
+    "enemyStartPos": (width//2, height//2),
     "backgroundColor": colors["black"],
     "fieldColor": colors["light gray"]
 }
@@ -113,6 +117,7 @@ class Field(pygame.Rect):
         self.name = name
         self.posL = posL
         self.posR = posR
+        self.hp = hp
         self.t = t
 
         (x, y) = self.posL
@@ -179,8 +184,8 @@ class Field(pygame.Rect):
 migField = Field(
     "Marmara Inovasyon Gunleri",
     1,
-    (80, 120),
-    (width-80, height-80),
+    field_wh[0],
+    field_wh[1],
 )
 
 player1 = Robot(
@@ -200,12 +205,12 @@ enemy1 = Robot(
     8,
     1.12,
     64,
-    "spaceship64.png",
+    "images/ufo64.png",
     pos=defaults["enemyStartPos"])
 
 
 players.append(player1)
-# players.append(enemy1)
+players.append(enemy1)
 
 
 def gameInit():
@@ -260,12 +265,15 @@ def runTime():
         if curPlayer.cur_speed > curPlayer.max_speed:
             curPlayer.cur_speed = curPlayer.max_speed
 
+        elif curPlayer.cur_speed < -curPlayer.max_speed:
+            curPlayer.cur_speed = -curPlayer.max_speed
+
         if curPlayer.cur_speed != 0:
             curPlayer.x_change, curPlayer.y_change = Robot.calcNew_xy(
                 curPlayer.pos, curPlayer.cur_speed, math.radians(curPlayer.angle))
 
         # İki farklı sınır olmasının sebebi sahanın kırılabilme özelliğinin olması
-        
+
         # region SCREEN LIMITS
         if (height - (curPlayer.px // 2) < y + curPlayer.y_change and curPlayer.y_change > 0):  # aşağı sınır
             curPlayer.y_change = (height-(curPlayer.px//2)) - y
@@ -284,16 +292,16 @@ def runTime():
         bx, by = migField.posL
         bx_r, by_r = migField.posR
 
-        if (abs(by_r - (curPlayer.px // 2)) < y + curPlayer.y_change and curPlayer.y_change > 0):  # aşağı sınır
+        if (abs(by_r - (curPlayer.px // 2)) < y + curPlayer.y_change and curPlayer.y_change > 0 and migField.hp > 0):  # aşağı sınır
             curPlayer.y_change = abs(by_r - (curPlayer.px // 2)) - y
 
-        elif (by + (curPlayer.px//2) > y + curPlayer.y_change and curPlayer.y_change < 0):  # yukarı sınır
+        elif (by + (curPlayer.px//2) > y + curPlayer.y_change and curPlayer.y_change < 0 and migField.hp > 0):  # yukarı sınır
             curPlayer.y_change = by + (curPlayer.px//2) - y
 
-        if (abs(bx_r - (curPlayer.px // 2)) < x + curPlayer.x_change and curPlayer.x_change > 0):  # sağ sınır
+        if (abs(bx_r - (curPlayer.px // 2)) < x + curPlayer.x_change and curPlayer.x_change > 0 and migField.hp > 0):  # sağ sınır
             curPlayer.x_change = abs(bx_r-(curPlayer.px//2)) - x
 
-        elif (bx + (curPlayer.px//2) > x + curPlayer.x_change and curPlayer.x_change < 0):  # sol sınır
+        elif (bx + (curPlayer.px//2) > x + curPlayer.x_change and curPlayer.x_change < 0 and migField.hp > 0):  # sol sınır
             curPlayer.x_change = (bx + (curPlayer.px//2)) - x
         # endregion
 
