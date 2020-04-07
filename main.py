@@ -1,4 +1,6 @@
 # import tensorflow as tf
+from settings import *
+from Robots import *
 import pygame
 import timeit
 import random
@@ -9,135 +11,9 @@ import sys
 import os
 
 
-FPS = 10
-width = 800
-height = 600
-
-title = "SECOND ROBOTICS COMPETITION"
-
-# To enable stable fps
-stabilization = True
-
-# To disable stable fps
-# stabilization = False
-
-pygame.init()
-screen = pygame.display.set_mode((width, height))
-
 clock = pygame.time.Clock()
 
 players = []
-
-colors = {
-    "white": (255, 255, 255),
-    "red": (255, 0, 0),
-    "green": (0, 255, 0),
-    "blue": (0, 0, 255),
-    "dark blue": (5, 5, 60),
-    "black": (0, 0, 0),
-    "gray": (125, 125, 125),
-    "dark gray": (40, 40, 40),
-    "light gray": (160, 160, 160),
-    "gay pink": (255, 20, 147)
-}
-
-field_wh = [(80, 120), (width-80, height-80)]
-(a1, a2), (a3, a4) = field_wh[0], field_wh[1]
-field_wh = [field_wh[0], field_wh[1], a1, a2, a3, a4]
-
-defaults = {
-    "playerStartPos": (width//2, height//2),
-    "enemyStartPos": (width//2, height//2),
-    "backgroundColor": colors["black"],
-    "fieldColor": colors["light gray"]
-}
-
-
-class Robot(pygame.Rect):
-    def __init__(self, name, typee, hp, max_speed, acc, px, imagee, angle=0, pos=(0, 0)):
-
-        self.max_speed = max_speed
-        self.angle = angle
-        self.cur_speed = 0
-        self.y_change = 0
-        self.x_change = 0
-        self.a_change = 0
-        self.type = typee
-        self.name = name
-        self.pos = pos
-        self.acc = acc
-        self.px = px
-
-        super(Robot, self).__init__(pos, (px, px))
-        self.original_image = pygame.image.load(imagee).convert()
-        self.image = self.original_image
-        (x, y) = self.pos
-        self.rect = self.image.get_rect().move((x - (self.px // 2), y - (self.px // 2)))
-
-        # (x, y) = self.pos
-        # self.rect = self.image.get_rect().move((x//2, y//2))
-
-    def draw(self):
-        self.angle = self.angle % 360
-
-        self.image = pygame.transform.rotate(self.original_image, self.angle)
-        self.rect.center = self.pos
-
-        x, y = self.rect.center
-        self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
-
-        screen.blit(self.image, self.rect)
-
-    @staticmethod
-    def calcNew_xy(pos, speed, angle_in_radians):
-        (x, y) = pos
-        new_y = -(speed*math.cos(angle_in_radians))
-        new_x = -(speed*math.sin(angle_in_radians))
-        return new_x, new_y
-
-    @staticmethod
-    def angle_of_vectors(cx, cy, tx, ty, wx, wy):
-        a = numpy.array([cx, cy])
-        b = numpy.array([wx, wy])
-        c = numpy.array([tx, ty])
-        ba = a - b
-        bc = c - b
-        cosine_angle = numpy.dot(
-            ba, bc) / (numpy.linalg.norm(ba) * numpy.linalg.norm(bc))
-        angle = (numpy.arccos(cosine_angle)) * 180 / math.pi
-        return angle
-
-    def findAngleVec(self, targetPos):
-        (tx, ty) = targetPos
-        (cx, cy) = self.pos
-        wx, wy = self.calcNew_xy(self.pos, self.px//2,
-                                 math.radians(self.angle))
-        wx, wy = wx+cx, wy+cy
-
-        ang = self.angle_of_vectors(cx, cy, tx, ty, wx, wy)
-        # print("cx: " + str(cx) + " cy: " + str(cy) + " wx: " + str(wx) + " wy: " +
-        #       str(wy) + " self.angle: j" + str(self.angle) + " calculated ang: " + str(ang))
-        return ang
-
-    def turn(self, angle):
-        if angle != 0:
-            self.a_change += angle % 360
-        else:
-            self.a_change = 0
-
-    def go(self, speed):
-        # Edits ONLY x/y_change stuff
-        self.x_change, self.y_change = self.calcNew_xy(
-            self.pos, speed, math.radians(self.angle))
-
-    def drawPivot(self):
-        (x, y) = self.pos
-        pygame.draw.rect(screen, colors["gray"], [
-                         x-1, 0, 2, height])
-
-        pygame.draw.rect(screen, colors["gray"], [
-                         0, y-1, width, 2])
 
 
 class Field(pygame.Rect):
@@ -221,7 +97,8 @@ player1 = Robot(
     1.6,
     64,
     "images/spaceship64.png",
-    pos=defaults["playerStartPos"])
+    pos=defaults["playerStartPos"],
+    angle=defaults["playerStartAngle"])
 
 enemy1 = Robot(
     "TITAN",
@@ -231,7 +108,8 @@ enemy1 = Robot(
     1.2,
     64,
     "images/ufo64.png",
-    pos=defaults["enemyStartPos"])
+    pos=defaults["enemyStartPos"],
+    angle=defaults["enemyStartAngle"])
 
 
 players.append(player1)
