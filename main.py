@@ -115,45 +115,8 @@ def runTime():
             curPlayer.x_change, curPlayer.y_change = Robot.calcNew_xy(
                 curPlayer.pos, curPlayer.cur_speed, math.radians(curPlayer.angle))
 
-        # İki farklı sınır olmasının sebebi sahanın kırılabilme özelliğinin olması
-
-        # region SCREEN LIMITS
-        if (height - (curPlayer.px // 2) < y + curPlayer.y_change and curPlayer.y_change > 0):  # aşağı sınır
-            curPlayer.y_change = (height-(curPlayer.px//2)) - y
-
-        elif (curPlayer.px//2 > y + curPlayer.y_change and curPlayer.y_change < 0):  # yukarı sınır
-            curPlayer.y_change = (curPlayer.px//2) - y
-
-        if (width - (curPlayer.px // 2) < x + curPlayer.x_change and curPlayer.x_change > 0):  # sağ sınır
-            curPlayer.x_change = (width-(curPlayer.px//2)) - x
-
-        elif (curPlayer.px//2 > x + curPlayer.x_change and curPlayer.x_change < 0):  # sol sınır
-            curPlayer.x_change = (curPlayer.px//2) - x
-        # endregion
-
-        # region FIELD LIMITS
-        bx, by = migField.posL
-        bx_r, by_r = migField.posR
-
-        if (abs(by_r - (curPlayer.px // 2)) <= y + curPlayer.y_change and (curPlayer.y_change > 0 or curPlayer.a_change != 0) and migField.hp > 0):  # aşağı sınır
-            curPlayer.y_change = abs(by_r - (curPlayer.px // 2)) - y
-            curPlayer.x_change, curPlayer.a_change = 0, 0
-
-        elif (by + (curPlayer.px//2) >= y + curPlayer.y_change and (curPlayer.y_change < 0 or curPlayer.a_change != 0) and migField.hp > 0):  # yukarı sınır
-            curPlayer.y_change = by + (curPlayer.px//2) - y
-            curPlayer.x_change, curPlayer.a_change = 0, 0
-
-        if (abs(bx_r - (curPlayer.px // 2)) <= x + curPlayer.x_change and (curPlayer.x_change > 0 or curPlayer.a_change != 0) and migField.hp > 0):  # sağ sınır
-            curPlayer.x_change = abs(bx_r-(curPlayer.px//2)) - x
-            curPlayer.y_change, curPlayer.a_change = 0, 0
-
-        elif (bx + (curPlayer.px//2) >= x + curPlayer.x_change and (curPlayer.x_change < 0 or curPlayer.a_change != 0) and migField.hp > 0):  # sol sınır
-            curPlayer.x_change = (bx + (curPlayer.px//2)) - x
-            curPlayer.y_change, curPlayer.a_change = 0, 0
-        # endregion
-
-        print(str(curPlayer.pos) + " sol: " + str(bx) + " sağ: " +
-              str(bx_r) + " yuk: " + str(by) + " aşa: " + str(by_r))
+        curPlayer.boundaryControl((0, 0), (width, height))
+        curPlayer.boundaryControl(migField.posL, migField.posR, migField.hp)
 
         curPlayer.pos = (x + curPlayer.x_change, y + curPlayer.y_change)
         curPlayer.angle += curPlayer.a_change

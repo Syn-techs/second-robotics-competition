@@ -28,6 +28,49 @@ class Robot(pygame.Rect):
         # (x, y) = self.pos
         # self.rect = self.image.get_rect().move((x//2, y//2))
 
+    def isOnBoundary(self, leftBoundaryPos, rightBoundaryPos, fieldHp=1):
+        (x, y) = self.pos
+        bx, by = leftBoundaryPos
+        bx_r, by_r = rightBoundaryPos
+
+        if (abs(by_r - (self.px // 2)) <= y + self.y_change and (self.y_change > 0 or self.a_change != 0) and fieldHp > 0):  # aşağı sınır
+            return "down"
+
+        elif (by + (self.px//2) >= y + self.y_change and (self.y_change < 0 or self.a_change != 0) and fieldHp > 0):  # yukarı sınır
+            return "up"
+
+        if (abs(bx_r - (self.px // 2)) <= x + self.x_change and (self.x_change > 0 or self.a_change != 0) and fieldHp > 0):  # sağ sınır
+            return "right"
+
+        elif (bx + (self.px//2) >= x + self.x_change and (self.x_change < 0 or self.a_change != 0) and fieldHp > 0):  # sol sınır
+            return "left"
+
+        return "none"
+
+    def boundaryControl(self, leftBoundaryPos, rightBoundaryPos, fieldHp=1):
+        (x, y) = self.pos
+        bx, by = leftBoundaryPos
+        bx_r, by_r = rightBoundaryPos
+
+        isOnBound = self.isOnBoundary(
+            leftBoundaryPos, rightBoundaryPos, fieldHp)
+
+        if isOnBound.startswith("d"):  # aşağı sınır
+            self.y_change = abs(by_r - (self.px // 2)) - y
+            self.x_change, self.a_change = 0, 0
+
+        elif isOnBound.startswith("u"):  # yukarı sınır
+            self.y_change = by + (self.px//2) - y
+            self.x_change, self.a_change = 0, 0
+
+        if isOnBound.startswith("r"):  # sağ sınır
+            self.x_change = abs(bx_r-(self.px//2)) - x
+            self.y_change, self.a_change = 0, 0
+
+        elif isOnBound.startswith("l"):  # sol sınır
+            self.x_change = (bx + (self.px//2)) - x
+            self.y_change, self.a_change = 0, 0
+
     def draw(self):
         self.angle = self.angle % 360
 
