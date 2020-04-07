@@ -1,6 +1,7 @@
 # import tensorflow as tf
 from settings import *
 from Robots import *
+from Field import *
 import pygame
 import timeit
 import random
@@ -9,111 +10,6 @@ import math
 import time
 import sys
 import os
-
-
-clock = pygame.time.Clock()
-
-players = []
-
-
-class Field(pygame.Rect):
-    def __init__(self, name, hp, posL, posR, color=defaults["fieldColor"], t=5):
-        self.color = color
-        self.name = name
-        self.posL = posL
-        self.posR = posR
-        self.hp = hp
-        self.t = t
-
-        (x, y) = self.posL
-        (x_r, y_r) = self.posR
-        super().__init__(posL, (x_r - x, y_r - y))
-
-        self.boundaries = {
-            "left: ": [x, hp],
-            "right: ": [x_r, hp],
-            "up: ": [y, hp],
-            "down: ": [y_r, hp]
-        }
-
-    def draw(self):
-        (x, y) = self.posL
-        (x_r, y_r) = self.posR
-        wid, hei = x_r - x, y_r - y
-
-        pygame.draw.rect(screen, self.color, [
-                         x-(self.t//2), y-(self.t//2), self.t, hei])
-
-        pygame.draw.rect(screen, self.color, [
-                         x_r-(self.t//2), y-(self.t//2), self.t, hei])
-
-        pygame.draw.rect(screen, self.color, [
-                         x-(self.t//2), y-(self.t//2), wid, self.t])
-
-        pygame.draw.rect(screen, self.color, [
-                         x-(self.t//2), y_r-(self.t//2), wid + self.t, self.t])
-
-    def deleteSide(self, side=None):
-        self.draw()
-
-        (x, y) = self.posL
-        (x_r, y_r) = self.posR
-
-        if side is not None:
-            if side.startswith("l"):
-                pygame.draw.rect(screen, defaults["backgroundColor"], [
-                                 x-(self.t//2), y-(self.t//2), self.t, x_r-x])
-                # x
-            # elif side.startswith("r"):
-            #     # x_r
-            # elif side.startswith("u"):
-            #     # y
-            # elif side.startswith("d"):
-            #     # y_r
-
-        # elif side is None and pos is None:
-        else:
-            for n, v in self.boundaries.items():
-                if v[1] == 0:
-                    self.deleteSide(side=n)
-
-    def reduceHp(self, b, rhp):
-        self.boundaries[b] = [self.boundaries[b]
-                              [0], self.boundaries[b][1] - rhp]
-
-
-migField = Field(
-    "Marmara Inovasyon Gunleri",
-    1,
-    field_wh[0],
-    field_wh[1],
-)
-
-player1 = Robot(
-    "UGUR ABI",
-    "player",
-    100,
-    16,
-    1.6,
-    64,
-    "images/spaceship64.png",
-    pos=defaults["playerStartPos"],
-    angle=defaults["playerStartAngle"])
-
-enemy1 = Robot(
-    "TITAN",
-    "enemy",
-    100,
-    10,
-    1.2,
-    64,
-    "images/ufo64.png",
-    pos=defaults["enemyStartPos"],
-    angle=defaults["enemyStartAngle"])
-
-
-players.append(player1)
-players.append(enemy1)
 
 
 def gameInit():
@@ -184,6 +80,8 @@ def runTime():
                 newAng = curPlayer.findAngleVec(targetPlayer.pos)
                 curPlayer.angle -= 1
 
+                # print(newAng)
+
                 if oldAng < newAng and newAng < 175:  # hedefe doğru (sola) dön
                     if newAng > 150:  # eğer çok solda değilse dönerek ilerle
                         curPlayer.turn(1)
@@ -237,22 +135,25 @@ def runTime():
         bx, by = migField.posL
         bx_r, by_r = migField.posR
 
-        if (abs(by_r - (curPlayer.px // 2)) < y + curPlayer.y_change and curPlayer.y_change > 0 and migField.hp > 0):  # aşağı sınır
+        if (abs(by_r - (curPlayer.px // 2)) <= y + curPlayer.y_change and (curPlayer.y_change > 0 or curPlayer.a_change != 0) and migField.hp > 0):  # aşağı sınır
             curPlayer.y_change = abs(by_r - (curPlayer.px // 2)) - y
             curPlayer.x_change, curPlayer.a_change = 0, 0
 
-        elif (by + (curPlayer.px//2) > y + curPlayer.y_change and curPlayer.y_change < 0 and migField.hp > 0):  # yukarı sınır
+        elif (by + (curPlayer.px//2) >= y + curPlayer.y_change and (curPlayer.y_change < 0 or curPlayer.a_change != 0) and migField.hp > 0):  # yukarı sınır
             curPlayer.y_change = by + (curPlayer.px//2) - y
             curPlayer.x_change, curPlayer.a_change = 0, 0
 
-        if (abs(bx_r - (curPlayer.px // 2)) < x + curPlayer.x_change and curPlayer.x_change > 0 and migField.hp > 0):  # sağ sınır
+        if (abs(bx_r - (curPlayer.px // 2)) <= x + curPlayer.x_change and (curPlayer.x_change > 0 or curPlayer.a_change != 0) and migField.hp > 0):  # sağ sınır
             curPlayer.x_change = abs(bx_r-(curPlayer.px//2)) - x
             curPlayer.y_change, curPlayer.a_change = 0, 0
 
-        elif (bx + (curPlayer.px//2) > x + curPlayer.x_change and curPlayer.x_change < 0 and migField.hp > 0):  # sol sınır
+        elif (bx + (curPlayer.px//2) >= x + curPlayer.x_change and (curPlayer.x_change < 0 or curPlayer.a_change != 0) and migField.hp > 0):  # sol sınır
             curPlayer.x_change = (bx + (curPlayer.px//2)) - x
             curPlayer.y_change, curPlayer.a_change = 0, 0
         # endregion
+
+        print(str(curPlayer.pos) + " sol: " + str(bx) + " sağ: " +
+              str(bx_r) + " yuk: " + str(by) + " aşa: " + str(by_r))
 
         curPlayer.pos = (x + curPlayer.x_change, y + curPlayer.y_change)
         curPlayer.angle += curPlayer.a_change

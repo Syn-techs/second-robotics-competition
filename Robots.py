@@ -89,3 +89,32 @@ class Robot(pygame.Rect):
 
         pygame.draw.rect(screen, colors["gray"], [
                          0, y-1, width, 2])
+
+
+players = []
+
+player1 = Robot(
+    "UGUR ABI",
+    "player",
+    100,
+    5,
+    1.2,
+    64,
+    "images/spaceship64.png",
+    pos=defaults["playerStartPos"],
+    angle=defaults["playerStartAngle"])
+
+enemy1 = Robot(
+    "TITAN",
+    "enemy",
+    100,
+    3,
+    1.2,
+    64,
+    "images/ufo64.png",
+    pos=defaults["enemyStartPos"],
+    angle=defaults["enemyStartAngle"])
+
+
+players.append(player1)
+# players.append(enemy1)
