@@ -220,7 +220,7 @@ player1 = Robot(
     16,
     1.6,
     64,
-    "spaceship64.png",
+    "images/spaceship64.png",
     pos=defaults["playerStartPos"])
 
 enemy1 = Robot(
