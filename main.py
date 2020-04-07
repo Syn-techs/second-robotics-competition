@@ -116,12 +116,15 @@ class Robot(pygame.Rect):
         wx, wy = wx+cx, wy+cy
 
         ang = self.angle_of_vectors(cx, cy, tx, ty, wx, wy)
-        print("cx: " + str(cx) + " cy: " + str(cy) + " wx: " + str(wx) + " wy: " +
-              str(wy) + " self.angle: " + str(self.angle) + " calculated ang: " + str(ang))
+        # print("cx: " + str(cx) + " cy: " + str(cy) + " wx: " + str(wx) + " wy: " +
+        #       str(wy) + " self.angle: j" + str(self.angle) + " calculated ang: " + str(ang))
         return ang
 
     def turn(self, angle):
-        self.a_change += angle % 360
+        if angle != 0:
+            self.a_change += angle % 360
+        else:
+            self.a_change = 0
 
     def go(self, speed):
         # Edits ONLY x/y_change stuff
@@ -224,8 +227,8 @@ enemy1 = Robot(
     "TITAN",
     "enemy",
     100,
-    20,
-    2,
+    10,
+    1.2,
     64,
     "images/ufo64.png",
     pos=defaults["enemyStartPos"])
@@ -298,9 +301,32 @@ def runTime():
                 # (tx, ty) = targetPlayer.pos
                 # (cx, cy) = curPlayer.pos
                 # curPlayer.cur_speed = 1
-                ang = curPlayer.findAngleVec(targetPlayer.pos)
-            # curPlayer.angle += 45
-            # print(curPlayer.type + str(curPlayer.angle) + " ok")
+                oldAng = curPlayer.findAngleVec(targetPlayer.pos)
+                curPlayer.angle += 1
+                newAng = curPlayer.findAngleVec(targetPlayer.pos)
+                curPlayer.angle -= 1
+
+                if oldAng < newAng and newAng < 175:  # hedefe doğru (sola) dön
+                    if newAng > 150:  # eğer çok solda değilse dönerek ilerle
+                        curPlayer.turn(1)
+                        curPlayer.cur_speed = 1
+
+                    else:  # eğer çok soldaysa ileri gitmeden dön
+                        curPlayer.turn(1)
+                        curPlayer.cur_speed = 0
+
+                # hedefe doğru (sağa) dön
+                elif oldAng >= newAng and newAng < 175:
+                    if newAng > 150:  # eğer çok sağda değilse dönerek ilerle
+                        curPlayer.turn(-1)
+                        curPlayer.cur_speed = 1
+
+                    else:  # eğer çok sağdaysa ileri gitmeden dön
+                        curPlayer.turn(-1)
+                        curPlayer.cur_speed = 0
+
+                else:
+                    curPlayer.turn(0)  # Ortadaysa dönmeyi durdur
 
         curPlayer.cur_speed *= curPlayer.acc
         if curPlayer.cur_speed > curPlayer.max_speed:
