@@ -1,14 +1,20 @@
 from settings import *
+from Field import *
 import pygame
 import math
 import numpy
 
 
 class Robot(pygame.Rect):
+    global width
+    global height
+    global migField
+
     def __init__(self, name, typee, hp, max_speed, acc, px, imagee, angle=0, pos=(0, 0)):
 
         self.max_speed = max_speed
         self.angle = angle
+        self.boundaries = []
         self.cur_speed = 0
         self.y_change = 0
         self.x_change = 0
@@ -17,6 +23,7 @@ class Robot(pygame.Rect):
         self.name = name
         self.pos = pos
         self.acc = acc
+        self.hp = hp
         self.px = px
 
         super(Robot, self).__init__(pos, (px, px))
@@ -25,24 +32,69 @@ class Robot(pygame.Rect):
         (x, y) = self.pos
         self.rect = self.image.get_rect().move((x - (self.px // 2), y - (self.px // 2)))
 
-        # (x, y) = self.pos
-        # self.rect = self.image.get_rect().move((x//2, y//2))
+        # ekran sınırı eklendi
+        self.boundaries.append(["screen", (0, 0), (width, height)])
+        # arena sınır eklendi
+        self.boundaries.append(
+            ["field", migField.posL, migField.posR, migField.hp])
+
+    def update(self):
+        (x, y) = self.pos
+
+        # Açı sınırlaması
+        self.angle = self.angle % 360
+
+        # Hızımın artıyoooor
+        self.cur_speed *= self.acc
+
+        # Tabii sınıra kadar
+        if self.cur_speed > self.max_speed:
+            self.cur_speed = self.max_speed
+
+        # Geri giderken ışık hızına çıkmak için altakki satırı sil
+        elif self.cur_speed < -(self.max_speed):
+            self.cur_speed = -(self.max_speed)
+
+        # Eğer hareket ediyorsak (dönme sayılmaz) açıya göre ne tarafa gideceğimizi hesapla
+        if self.cur_speed != 0:
+            self.x_change, self.y_change = Robot.calcNew_xy(
+                self.pos, self.cur_speed, math.radians(self.angle))
+
+        # Ekran sınırları
+        self.boundaryControl(self.boundaries[0][1], self.boundaries[0][2])
+        # Arena sınrılaması
+        self.boundaryControl(
+            self.boundaries[1][1], self.boundaries[1][2], self.boundaries[1][3])
+
+        ###################################################################
+        # pygame.draw.rect(screen, colors["red"], [620-50, 420-50, 100, 100])
+        ###################################################################
+
+        for player in players:
+            if player.name != self.name:
+                self.roboControl(player)
+
+        # İlerlemeyi işle
+        self.pos = (x + self.x_change, y + self.y_change)
+        self.angle += self.a_change
+
+    # region boundary control funcs
 
     def isOnBoundary(self, leftBoundaryPos, rightBoundaryPos, fieldHp=1):
         (x, y) = self.pos
-        bx, by = leftBoundaryPos
-        bx_r, by_r = rightBoundaryPos
+        leftl, upl = leftBoundaryPos
+        rightl, downl = rightBoundaryPos
 
-        if (abs(by_r - (self.px // 2)) <= y + self.y_change and (self.y_change > 0 or self.a_change != 0) and fieldHp > 0):  # aşağı sınır
+        if (abs(downl - (self.px // 2)) <= y + self.y_change and (self.y_change > 0 or self.a_change != 0) and fieldHp > 0):  # aşağı sınır
             return "down"
 
-        elif (by + (self.px//2) >= y + self.y_change and (self.y_change < 0 or self.a_change != 0) and fieldHp > 0):  # yukarı sınır
+        elif (upl + (self.px//2) >= y + self.y_change and (self.y_change < 0 or self.a_change != 0) and fieldHp > 0):  # yukarı sınır
             return "up"
 
-        if (abs(bx_r - (self.px // 2)) <= x + self.x_change and (self.x_change > 0 or self.a_change != 0) and fieldHp > 0):  # sağ sınır
+        if (abs(rightl - (self.px // 2)) <= x + self.x_change and (self.x_change > 0 or self.a_change != 0) and fieldHp > 0):  # sağ sınır
             return "right"
 
-        elif (bx + (self.px//2) >= x + self.x_change and (self.x_change < 0 or self.a_change != 0) and fieldHp > 0):  # sol sınır
+        elif (leftl + (self.px//2) >= x + self.x_change and (self.x_change < 0 or self.a_change != 0) and fieldHp > 0):  # sol sınır
             return "left"
 
         return "none"
@@ -60,19 +112,81 @@ class Robot(pygame.Rect):
             self.x_change, self.a_change = 0, 0
 
         elif isOnBound.startswith("u"):  # yukarı sınır
-            self.y_change = by + (self.px//2) - y
+            self.y_change = by + (self.px // 2) - y
             self.x_change, self.a_change = 0, 0
 
         if isOnBound.startswith("r"):  # sağ sınır
-            self.x_change = abs(bx_r-(self.px//2)) - x
+            self.x_change = abs(bx_r - (self.px // 2)) - x
             self.y_change, self.a_change = 0, 0
 
         elif isOnBound.startswith("l"):  # sol sınır
-            self.x_change = (bx + (self.px//2)) - x
+            self.x_change = (bx + (self.px // 2)) - x
             self.y_change, self.a_change = 0, 0
 
+    # endregion
+
+    def isOnRobotBound(self, curEnemy):
+        (x, y) = self.pos
+        x_new, y_new = x+self.x_change, y+self.y_change
+
+        leftC = (curEnemy.pos[0] - (curEnemy.px // 2),
+                 curEnemy.pos[1] - (curEnemy.px // 2))
+
+        rightC = (curEnemy.pos[0] + (curEnemy.px // 2),
+                  curEnemy.pos[1] + (curEnemy.px // 2))
+
+        leftl, upl = leftC[0] - (self.px//2), leftC[1] - (self.px//2)
+        rightl, downl = rightC[0] + (self.px//2), rightC[1] + (self.px//2)
+
+        # Eğer aktifkonumu onun içinde değilse ve oraya girmeye çalışırsa durdur
+
+        if (x_new > leftl) and (x_new < rightl) and (y_new > upl) and (y_new < downl):
+            if x < leftl:
+                return "left"
+
+            elif x > rightl:
+                return "right"
+
+            if y < upl:
+                return "up"
+
+            elif y > downl:
+                return "down"
+
+            else:
+                return "inside"
+
+        else:
+            return "none"
+
+    def roboControl(self, curEnemy):
+        isOnBound = self.isOnRobotBound(curEnemy)
+
+        (leftl, upl) = (curEnemy.pos[0] - self.px, curEnemy.pos[1] - self.px)
+
+        (rightl, downl) = (curEnemy.pos[0] +
+                           self.px, curEnemy.pos[1] + self.px)
+
+        if isOnBound.startswith("i"):
+            print("inside")
+
+        elif not isOnBound.startswith("n"):
+            self.x_change, self.y_change, self.a_change = 0, 0, 0
+
+            if isOnBound.startswith("l"):  # sol sınır
+                print(curEnemy.name + "is hitted on left side")
+
+            elif isOnBound.startswith("r"):  # sağ sınır
+                print(curEnemy.name + "is hitted on right side")
+
+            if isOnBound.startswith("d"):  # aşağı sınır
+                print(curEnemy.name + "is hitted on bottom side")
+
+            elif isOnBound.startswith("u"):  # yukarı sınır
+                print(curEnemy.name + "is hitted on upper side")
+
     def draw(self):
-        self.angle = self.angle % 360
+        self.update()
 
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         self.rect.center = self.pos
@@ -110,11 +224,10 @@ class Robot(pygame.Rect):
         wx, wy = wx+cx, wy+cy
 
         ang = self.angle_of_vectors(cx, cy, tx, ty, wx, wy)
-        # print("cx: " + str(cx) + " cy: " + str(cy) + " wx: " + str(wx) + " wy: " +
-        #       str(wy) + " self.angle: j" + str(self.angle) + " calculated ang: " + str(ang))
         return ang
 
     def turn(self, angle):
+        angle = 0 - angle  # sağ sol olayını ters çevirdim
         if angle != 0:
             self.a_change += angle % 360
         else:
@@ -127,6 +240,7 @@ class Robot(pygame.Rect):
 
     def drawPivot(self):
         (x, y) = self.pos
+        self.draw()
         pygame.draw.rect(screen, colors["gray"], [
                          x-1, 0, 2, height])
 
@@ -160,4 +274,4 @@ enemy1 = Robot(
 
 
 players.append(player1)
-# players.append(enemy1)
+players.append(enemy1)

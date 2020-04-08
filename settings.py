@@ -35,8 +35,9 @@ defaults = {
     "playerStartAngle": 219.80557109226518,
     "enemyStartPos": (field_wh[4] - 100, field_wh[5] - 100),
     "enemyStartAngle": 39.80557109226519,
-    "backgroundColor": colors["black"],
-    "fieldColor": colors["light gray"]
+    "enemygatta": 150,
+    "backgroundColor": colors["light gray"],
+    "fieldColor": colors["dark gray"]
 }
 
 
