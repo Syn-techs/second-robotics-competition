@@ -60,19 +60,15 @@ class Robot(pygame.Rect):
             self.x_change, self.y_change = Robot.calcNew_xy(
                 self.pos, self.cur_speed, math.radians(self.angle))
 
+        for player in players:
+            if player.name != self.name:
+                self.roboControl(player)
+
         # Ekran sınırları
         self.boundaryControl(self.boundaries[0][1], self.boundaries[0][2])
         # Arena sınrılaması
         self.boundaryControl(
             self.boundaries[1][1], self.boundaries[1][2], self.boundaries[1][3])
-
-        ###################################################################
-        # pygame.draw.rect(screen, colors["red"], [620-50, 420-50, 100, 100])
-        ###################################################################
-
-        for player in players:
-            if player.name != self.name:
-                self.roboControl(player)
 
         # İlerlemeyi işle
         self.pos = (x + self.x_change, y + self.y_change)
@@ -127,20 +123,17 @@ class Robot(pygame.Rect):
 
     def isOnRobotBound(self, curEnemy):
         (x, y) = self.pos
-        x_new, y_new = x+self.x_change, y+self.y_change
+        x_new, y_new = x + self.x_change, y + self.y_change
 
-        leftC = (curEnemy.pos[0] - (curEnemy.px // 2),
-                 curEnemy.pos[1] - (curEnemy.px // 2))
+        (leftl, upl) = ((curEnemy.pos[0] - (self.px // 2 + curEnemy.px // 2)),
+                        (curEnemy.pos[1] - (self.px // 2 + curEnemy.px // 2)))
 
-        rightC = (curEnemy.pos[0] + (curEnemy.px // 2),
-                  curEnemy.pos[1] + (curEnemy.px // 2))
-
-        leftl, upl = leftC[0] - (self.px//2), leftC[1] - (self.px//2)
-        rightl, downl = rightC[0] + (self.px//2), rightC[1] + (self.px//2)
+        (rightl, downl) = ((curEnemy.pos[0] + (self.px // 2 + curEnemy.px // 2)),
+                           (curEnemy.pos[1] + (self.px // 2 + curEnemy.px // 2)))
 
         # Eğer aktifkonumu onun içinde değilse ve oraya girmeye çalışırsa durdur
 
-        if (x_new > leftl) and (x_new < rightl) and (y_new > upl) and (y_new < downl):
+        if ((x_new > leftl) and (x_new < rightl) and (y_new > upl) and (y_new < downl)) or ((x > leftl) and (x < rightl) and (y > upl) and (y < downl)):
             if x < leftl:
                 return "left"
 
@@ -153,37 +146,73 @@ class Robot(pygame.Rect):
             elif y > downl:
                 return "down"
 
-            else:
-                return "inside"
+            # else:
+            return "inside"
 
         else:
             return "none"
 
     def roboControl(self, curEnemy):
         isOnBound = self.isOnRobotBound(curEnemy)
+        isEnemyOnBound = curEnemy.isOnBoundary(
+            migField.posL, migField.posR, migField.hp)
+
+        if not isEnemyOnBound.startswith("n") and curEnemy.type == "player":
+            print(curEnemy.name + " " + isEnemyOnBound)
 
         (leftl, upl) = (curEnemy.pos[0] - self.px, curEnemy.pos[1] - self.px)
 
         (rightl, downl) = (curEnemy.pos[0] +
                            self.px, curEnemy.pos[1] + self.px)
 
-        if isOnBound.startswith("i"):
-            print("inside")
+        if isOnBound.startswith("n") or (curEnemy.x_change > 0 and self.x_change > 0) or (curEnemy.x_change < 0 and self.x_change < 0) or (curEnemy.y_change > 0 and self.y_change > 0) or (curEnemy.y_change < 0 and self.y_change < 0):
+            pass
 
-        elif not isOnBound.startswith("n"):
-            self.x_change, self.y_change, self.a_change = 0, 0, 0
+        elif isEnemyOnBound.startswith("n"):
+            # X DEĞİŞİMİ
 
-            if isOnBound.startswith("l"):  # sol sınır
-                print(curEnemy.name + "is hitted on left side")
+            if abs(self.x_change) == abs(curEnemy.x_change):
+                self.x_change, self.a_change = 0, 0
 
-            elif isOnBound.startswith("r"):  # sağ sınır
-                print(curEnemy.name + "is hitted on right side")
+            elif abs(curEnemy.x_change) > abs(self.x_change):
+                if curEnemy.x_change > 0:
+                    self.x_change, self.a_change = (
+                        curEnemy.x_change - self.x_change), 0
+                else:
+                    self.x_change, self.a_change = (
+                        curEnemy.x_change + self.x_change), 0
 
-            if isOnBound.startswith("d"):  # aşağı sınır
-                print(curEnemy.name + "is hitted on bottom side")
+            elif abs(curEnemy.x_change) < abs(self.x_change):
+                if self.x_change > 0:
+                    self.x_change, self.a_change = (
+                        self.x_change - curEnemy.x_change), 0
+                else:
+                    self.x_change, self.a_change = (
+                        self.x_change + curEnemy.x_change), 0
 
-            elif isOnBound.startswith("u"):  # yukarı sınır
-                print(curEnemy.name + "is hitted on upper side")
+            # Y DEĞİŞİMİ
+
+            if abs(self.y_change) == abs(curEnemy.y_change):
+                self.y_change, self.a_change = 0, 0
+
+            elif abs(curEnemy.y_change) > abs(self.y_change):
+                if curEnemy.y_change > 0:
+                    self.y_change, self.a_change = (
+                        curEnemy.y_change - self.y_change), 0
+                else:
+                    self.y_change, self.a_change = (
+                        curEnemy.y_change + self.y_change), 0
+
+            elif abs(curEnemy.y_change) < abs(self.y_change):
+                if self.y_change > 0:
+                    self.y_change, self.a_change = (
+                        self.y_change - curEnemy.y_change), 0
+                else:
+                    self.y_change, self.a_change = (
+                        self.y_change + curEnemy.y_change), 0
+
+        else:
+            self.x_change, self.y_change, self.a_change, self.cur_speed = 0, 0, 0, 0
 
     def draw(self):
         self.update()
